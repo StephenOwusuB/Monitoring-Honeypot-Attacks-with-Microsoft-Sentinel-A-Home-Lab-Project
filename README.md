@@ -1,7 +1,7 @@
 <h1>Microsoft Sentinel Live Attack Demonstration Home Lab</h1>
 
 <h2>Description</h2>
-<b>This is a walkthrough of how I used Microsoft Azure and created a virtual machine in the cloud running Windows 10. I exposed a VM to the internet and used Azure Log Analytics Workspace, Microsoft Defender for Cloud, and Azure Sentinel to collect and aggregate the attack data and display it on a map in Microsoft Sentinel. This project will display the use of a few different tools and resources. I will be using PowerShell to scan Event Viewer in the exposed VM, specifically EventID 4625 which is failed logon attempts, and send that data to a logfile. The PowerShell Script also sends the IP address of any failed logons to IPgeolocation.io via an API, so later that information can be used Microsoft Sentinel to map where the logon attempts originated from. This project was done to gain experience with SIEMs, cloud concepts and resources, APIs, and Microsoft Azure. I learned how to provision and configure resources in the cloud, how to read SIEM logs and much more. This was a fun project and I hope anyone reading this appreciates the work that went into this project.<b/>
+<b>In this project, I leveraged Microsoft Azure to create and manage a cloud-based virtual machine running Windows 10. By exposing this VM to the internet, I harnessed the power of Azure Log Analytics Workspace, Microsoft Defender for Cloud, and Azure Sentinel to gather and analyze attack data, visualizing it on a map within Microsoft Sentinel. To dive deeper, I utilized PowerShell to monitor the Event Viewer on the exposed VM, specifically targeting EventID 4625 for failed logon attempts. This data was collected in a logfile, and through an API integration with IPgeolocation.io, I mapped the origins of these logon attempts using Microsoft Sentinel.This hands-on experience enriched my understanding of SIEMs, cloud services, APIs, and Microsoft Azure. I mastered the provisioning and configuration of cloud resources, gained proficiency in interpreting SIEM logs, and much more.I thoroughly enjoyed this project and hope it inspires readers to undertake similar projects or leverage the insights gained here to explore even more possibilities with Azure.<b/>
 <br />
 
 <h2>Utilities Used</h2>
@@ -29,7 +29,7 @@
 <h2 align="center">Program walk-through</h2>
 
 <p align="center">
-<b>The first thing I am going to do is create a Microsoft Azure account, this will be the cloud environment I'll use to provision my resources. I will take advantage of the $200 credit I'll receive to do this project. The resources I'm using are not very resource heavy, so my credit can be used towards future projects. Also included is the website I will be using for my IP geolocation data. </b> <br/>
+<b>The first step in project is to create a Microsoft Azure account, which will serve as  the cloud environment for provision my resources. I'll take advantage of the $200 credit  that comes with the account to fund this project. Given that the resources I'll be using are not resource-intensive, I'll be able to save some of the credit for future endeavors. Additionally, I'll be utilizing a specific website for my IP geolocation.  </b> <br/>
 </p>
 
 ![Create_Azure_Subscription](https://user-images.githubusercontent.com/108043108/225348757-c41744df-2be1-4ffc-87a6-aa258a4102ef.JPG)
@@ -39,7 +39,7 @@
 <br />
 <br />
 <p align="center">
-<b>The next thing I'll do is start the process of creating my virtual machines. Provisioning a VM can be a lengthy process so while I move on to the next step, my VM can be provisioned in the background.</b> <br/>
+<b>The next step involves initiating the creation of my virtual machines. Given that provisioning a VM can be time-consuming, I'll allow it to run in the background while I proceed with other tasks.</b> <br/>
 </p>
 
 ![Create_VM](https://user-images.githubusercontent.com/108043108/225350437-f6fc6e29-6821-48d5-a379-2099477589ae.JPG)
@@ -47,7 +47,7 @@
 <br />
 <br />
 <p align="center">
-<b>At this point in the VM creation process I need to make sure that I create a new Resource Group that all of my future resources will be under. A resource group in Azure is a logical grouping of tools, services, configurations and more that exist under one banner so they can be created and deleted at the same time (they share the same lifespan). If I have resources outside of a particular resource group, if I delete that resource group the ones outside of it will still exist. It makes it easier to manage your resources if they're all in the same place. I decided to name this resource group "HoneyPot_Lab" and I name the virtual machine "HoneyPot-VM".</b>
+<b>At this stage in the VM creation process, it's essential to create a new Resource Group to house all future resources. In Azure, a Resource Group serves as a logical container for tools, services, configurations, and more, allowing them to be managed collectively. This means they can be created or deleted simultaneously, sharing the same lifecycle. If resources are placed outside of a specific Resource Group, they will persist even if the Resource Group is deleted. Grouping resources in this way simplifies their management. I've decided to name this Resource Group "HoneyPot_Lab" and the virtual machine "HoneyPot-VM".</b>
 <br/>
 </p>
 
@@ -57,7 +57,7 @@
 <br />
 <br />
 <p align="center">
-<b>I scroll down on that same page, and I now must choose the size of the VM I am going to provision. In the photo I initially chose Standard_B1s, as circled in green. Later I decided to upgrade it to Standard_B2s which gave 2 CPU cores instead of 1 and more RAM. The first one I chose was just too slow. PowerShell kept crashing and the VM was lagging a lot. After choosing the size of the VM, I created the admin account. I chose a unique admin name and a 30-character password made up of special characters, numbers, and a mix of lowercase and uppercase letters. Since I knew people would be trying to log into the exposed VM through brute forcing and dictionary attacks, a strong password was a necessity. The public inbound port rules, essentially which ports will be open to be able to connect to the VM. At this step you can set multiple authentication methods like SSH, but I chose to only allow RDP. RDP uses port 3389.</b> <br/>
+<b>As I continued on the same page, I selected the size for the virtual machine. Initially, I chose Standard_B1s, indicated in green in the photo. However, I later upgraded to Standard_B2s for better performance, which provided 2 CPU cores and more RAM. The first configuration was too slow; PowerShell kept crashing, and the VM was lagging significantly. After selecting the VM size, I created the admin account with a unique username and a 30-character password comprising special characters, numbers, and a mix of uppercase and lowercase letters. Given the exposed nature of the VM, a strong password was crucial to defend against brute force and dictionary attacks. Next, I configured the public inbound port rules to determine which ports would be open for connectivity to the VM. Although multiple authentication methods like SSH can be set at this step, I opted to allow only RDP, which uses port 3389.</b> <br/>
 </p>
 
 ![Create_VM_3](https://user-images.githubusercontent.com/108043108/225365594-cf2fe158-d887-4bf9-aca6-d423019404a6.jpg)
@@ -65,7 +65,7 @@
 <br />
 <br />
 <p align="center">
-<b>The next step is to create a new Network Security Group (NSG). An NSG is basically a Firewall that can create and enforce rules on inbound and outbound traffic to Azure resources. For this project we don't want any rules on traffic. We want to allow anyone and everyone to be able to communicate with the honeypot VM. There is a default inbound rule, so we'll delete that one and create a new inbound rule that will allow EVERYTHING into the VM. On the Destination Port Ranges box, I wrote an asterisk (*) for Anything. This will allow for any port ranges. We'll allow any protocol. For Priority, I set it at 100 because the lower the number the higher the priority. So if there is a rogue rule somewhere, this rule will have priority over it. With these rules set it will allow any and all traffic into our VM. I would NEVER EVER do this in a real production environment.</b> <br/>
+<b>The next step is to create a new Network Security Group (NSG). An NSG acts as a firewall, allowing you to create and enforce rules on inbound and outbound traffic to Azure resources. For this project, we don’t want to restrict traffic; we want to allow anyone and everyone to communicate with the honeypot VM. To achieve this, we'll delete the default inbound rule and create a new rule that permits all traffic into the VM. In the Destination Port Ranges box, I entered an asterisk (*) to allow any port ranges. We’ll permit any protocol as well. I set the priority at 100 because, in Azure, the lower the number, the higher the priority. This ensures that our rule takes precedence over any other potential rules. With these settings, all traffic will be allowed into our VM. It’s important to note that this configuration is only for the purpose of this project and should NEVER be used in a real production environment..</b> <br/>
 </p>
 
 ![Networking_NSG_1](https://user-images.githubusercontent.com/108043108/225353983-66d6e530-783f-4db8-9720-23e575719b5f.JPG)
@@ -76,7 +76,7 @@
 <br />
 <br />
 <p align="center">
-<b>I review, create, and deploy the VM as the last step. </b> <br/>
+<b>As the final step, I review the configuration, create, and deploy the VM. </b> <br/>
 </p>
 
 ![Create_VM_4](https://user-images.githubusercontent.com/108043108/225372110-b0dcf0b3-b991-41d5-8fbd-3817cdc56b8e.JPG)
@@ -85,7 +85,7 @@
 <br />
 <br />
 <p align="center">
-<b>While my VM is deploying, I can get started on setting up Log Analytics Workspace. These can all be found in the Azure home dashboard, or you can search for them in the search bar. When I create a Log Analytics Workspace, I make sure to put it in my HoneyPot_Lab resource group so it can be deleted when I delete that resource group. I name the instance LAW-HoneyPot.</b> <br/>
+<b>While my VM is deploying, I take the opportunity to set up the Log Analytics Workspace. These can be accessed from the Azure home dashboard or found using the search bar. When creating the Log Analytics Workspace, I ensure it's placed within my HoneyPot_Lab resource group so it can be conveniently deleted along with the group. I name this instance LAW-HoneyPot.</b> <br/>
 </p>
 
 ![Log_Analytics_Workspace](https://user-images.githubusercontent.com/108043108/225373030-1633fcf3-49cf-4a6f-afa7-33337a60c57c.JPG)
@@ -106,7 +106,7 @@
 <br />
 <br />
 <p align="center">
-<b>Since my VM was created, I can go back into Log Analytics Workspaces and connect my VM to that service as well.</b> <br/>
+<b>With my VM successfully created, I can now return to Log Analytics Workspaces and connect my VM to the service.</b> <br/>
 </p>
 
 ![Connect_VM_To_LAW](https://user-images.githubusercontent.com/108043108/225376430-5bb177f2-a2e9-4faa-ab8b-64bd23625407.JPG)
@@ -115,7 +115,7 @@
 <br />
 <br />
 <p align="center">
-<b>I can now create a Microsoft Sentinel resource and connect it to my VM. </b> <br/>
+<b>I can now create a Microsoft Sentinel resource and link it to my VM.</b> <br/>
 </p>
 
 ![Azure_Sentinel](https://user-images.githubusercontent.com/108043108/225377514-f5462e65-4b40-4823-a613-7088cfeff63a.JPG)
@@ -124,7 +124,7 @@
 <br />
 <br />
 <p align="center">
-<b>Now that everything is set up in the Azure dashboard, I can go into my VM and set things up there. The first thing I need to do is get my VM's public IP address so I can Remote Desktop (RDP) into it. I go into the Virtual Machines tab in Azure and navigate into the HoneyPot VM. Highlighted in my VM's Public IP.</b> <br/>
+<b>With everything set up in the Azure dashboard, I can now configure my VM. The first step is to obtain my VM's public IP address to establish a Remote Desktop (RDP) connection. I navigate to the Virtual Machines tab in Azure, select the HoneyPot VM, and note the highlighted public IP address.</b> <br/>
 </p>
 
 ![Getting_VM_Public_IP](https://user-images.githubusercontent.com/108043108/225379998-5bcad4c5-c878-4249-8384-34e1581dc35d.JPG)
@@ -132,7 +132,7 @@
 <br />
 <br />
 <p align="center">
-<b>From here I can log into my VM via Remote Desktop. I open up Remote Desktop on my native PC, enter the public IP address and credentials needed and connect in! I configure the HoneyPot a bit.</b> <br/>
+<b>From this point, I can log into my VM via Remote Desktop. I open Remote Desktop on my local PC, enter the public IP address and necessary credentials, and establish the connection. Once connected, I proceed to configure the HoneyPot.</b> <br/>
 </p>
 
 ![Connect_With_RDP](https://user-images.githubusercontent.com/108043108/225381141-3514bcc6-3417-4281-ad67-1b4af20edfd5.JPG)
@@ -142,7 +142,7 @@
 <br />
 <br />
 <p align="center">
-<b>After I'm successfully logged into the VM via RDP, I navigate to Event Viewer. Event Viewer logs everything that goes on in a windows system. It gives each action an EventID so it can be more easily navigated or browsed by the EventID. For this project we are concerned specifically with EventID 4625, which is Failed Logon Attempts. These logs can be found in the Security tab. In the pictures below, I run another instance of Remote Desktop and try to log into the VM with the wrong password. This creates a failed logon attempt which is then logged and recorded in Event Viewer.</b> <br/>
+<b>After successfully logging into the VM via RDP, I navigate to Event Viewer. Event Viewer records all activities on a Windows system, assigning each action an EventID for easier navigation. For this project, we are specifically concerned with EventID 4625, which denotes Failed Logon Attempts. These logs can be found in the Security tab. In the images below, I launch another instance of Remote Desktop and attempt to log into the VM with an incorrect password. This generates a failed logon attempt, which is then logged and recorded in Event Viewer.</b> <br/>
 </p>
 
 ![Event_Viewer](https://user-images.githubusercontent.com/108043108/225381724-2603d72a-5334-479d-b555-c1d0baaeb875.JPG)
@@ -152,7 +152,7 @@
 <br />
 <br />
 <p align="center">
-<b>The next step is the ping the VM from my native computer. I do this to see if I can make a direct connection to the VM and see if it is currently discoverable. It is not. That is because the VM has Windows Defender Firewall activated. The firewall is blocking ICMP Echo Requests, making the VM undiscoverable. I know this because I pinged the VM's public IP address which is 74.235.173.155 and I see Request timed out a few times. The firewall is dropping the ICMP request packets.</b> <br/>
+<b>The next step is to ping the VM from my local computer to determine if a direct connection can be made and to check its discoverability. The VM is currently not discoverable because Windows Defender Firewall is active, blocking ICMP Echo Requests. I confirmed this by pinging the VM's public IP address, 74.235.173.155, and observing multiple "Request timed out" messages. The firewall is dropping the ICMP request packets.</b> <br/>
 </p>
 
 ![Ping_VM](https://user-images.githubusercontent.com/108043108/225383503-2a599790-511e-47ec-b858-4055f42ead0c.JPG)
@@ -160,7 +160,7 @@
 <br />
 <br />
 <p align="center">
-<b>To make sure that everyone on the internet can discover my VM I need to disable the windows firewall. I do this by going into the windows search bar and searching wf.msc. Once inside the windows firewall, I begin disabling everything. I then open up CMD in my native computer and try to ping the VM again. This time it receives replies from the VM because the firewall is no longer blocking ICMP requests. </b> <br/>
+<b>To ensure that everyone on the internet can discover my VM, I need to disable the Windows Firewall. I start by searching for wf.msc in the Windows search bar. Once inside the Windows Firewall settings, I proceed to disable all firewall rules. Then, I open Command Prompt (CMD) on my local computer and ping the VM again. This time, it successfully receives replies from the VM because the firewall is no longer blocking ICMP requests. </b> <br/>
 </p>
 
 ![Turn_Off_Firewall](https://user-images.githubusercontent.com/108043108/225385096-6cdeaa2a-3411-46fa-bad1-0afcee031860.JPG)
@@ -169,7 +169,7 @@
 <br />
 <br />
 <p align="center">
-<b>Now that my VM is exposed to the internet I can begin the setup of my PowerShell script. It is the heart of this project. This PowerShell script will parse Event Viewer specifically looking for EventID 4625. It will then send the IP address from the failed logon attempts to the website IPgeolocation.io via an API. The reason I did this is because the IP address in event viewer does not contain any geographical location. It was easier to send the data to a system dedicated to pulling that information out and sending it back to myself rather than building it from scratch. The PowerShell script will then receive all that geographical data and save it as a string in a logfile named failed_rdp.log. I will use this logfile later on in the project to be able to map the attacks live in Microsoft Sentinel.</b> <br/>
+<b>With my VM now exposed to the internet, I can begin setting up the PowerShell script, which is the core of this project. This script will parse Event Viewer logs, specifically targeting EventID 4625, which indicates failed logon attempts. It will then send the IP addresses from these failed attempts to the website IPgeolocation.iovia an API. This approach is used because Event Viewer logs do not include geographical location information. By leveraging a dedicated service, I can obtain this data more efficiently than building the functionality from scratch. The PowerShell script will receive the geographical data and save it as a string in a logfile named failed_rdp.log. Later in the project, this logfile will be used to map the attacks live in Microsoft Sentinel.</b> <br/>
 </p>
 
 ![Create_PS_Script](https://user-images.githubusercontent.com/108043108/225409638-0f9735a1-eca0-446f-afb7-74ef0d427ebf.JPG)
@@ -178,7 +178,7 @@
 <br />
 <br />
 <p align="center">
-<b>After I open PowerShell, I paste my script that was written before the start of this project. I then save that script to the desktop as Log_Exporter. At this point you should go and make a profile on IpGeolocation to get your API. You'll paste your own API into the PS script. You'll get 1000 free calls, but they can go fairly quickly, so I recommend going back into the Windows Firewall settings and turning them back ON until you're done setting up your Log Analytics Workbooks Custom Fields later on in the lab. After those are configured, you can then turn off the Firewall.</b> <br/>
+<b>After opening PowerShell, I paste my pre-written script and save it to the desktop as Log_Exporter. Next, I create a profile on IPgeolocation to obtain my API key. This key is then integrated into the PowerShell script. While you'll get 1,000 free API calls, they can be consumed quickly. Therefore, I recommend re-enabling the Windows Firewall until you've finished setting up your Log Analytics Workbooks Custom Fields later in the lab. Once those configurations are complete, you can disable the Firewall again.</b> <br/>
 </p>
 
 ![Create_PS_Script_2](https://user-images.githubusercontent.com/108043108/225410802-01a83b34-e79a-4516-8bdb-70c01baa76d7.JPG)
@@ -187,7 +187,7 @@
 <br />
 <br />
 <p align="center">
-<b>I run my Log_Exporter script. So that it was easier to read I made it so that the script outputs in pink and black. The API_KEY you see has been changed after I finished the project. In the first photo you can see that my script is working just fine. The output you see is the first failed login that I did earlier. The second photo shows how the data is saved into the failed_rdp logfile in string format. I included some sample data in this file because later it will be needed to train the AI in Log Analytics Workbooks and Microsoft Sentinel. More data equals more precision.</b> <br/>
+<b>I ran my Log_Exporter script and customized it to display outputs in pink and black for better readability. The API_KEY shown in the photos has been changed after completing the project. The first photo demonstrates that the script is functioning correctly, displaying the first failed login attempt I performed earlier. The second photo shows the data being saved in string format into the failed_rdp logfile. I included sample data in this file to enhance the accuracy of training the AI in Log Analytics Workbooks and Microsoft Sentinel, as more data leads to greater precision.</b> <br/>
 </p>
 
 ![Run_PS_Script](https://user-images.githubusercontent.com/108043108/225412357-ee390c08-c131-4658-b6d0-b2c6f0485850.JPG)
@@ -196,7 +196,7 @@
 <br />
 <br />
 <p align="center">
-<b>At this point to test if the PowerShell script is working, I failed another logon attempt. As you can see someone has already found my VM and started to try and brute force it. This person was in Tunisia. They found it so fast, it was a bit annoying. I could have blocked his IP or enabled the firewall again until I was finished completely with my setup, but this data was perfect to train the AI in Azure, so I let it go at the time. In hindsight it was a bad move. The free API from IPgeolocation.io only allowed for 1000 calls. This person in Tunisia hit that limit very quickly, ruining my project. I had to pay $15 for an extra 150k API calls to save my project. </b> <br/>
+<b>To test if the PowerShell script was working, I intentionally failed another logon attempt. Surprisingly, someone quickly found my VM and began attempting to brute force it. This individual was located in Tunisia and discovered the VM so rapidly that it was slightly frustrating. Although I considered blocking the IP or re-enabling the firewall until I completed my setup, the data being generated was ideal for training the AI in Azure, so I decided to let it continue. In hindsight, this was a mistake. The free API from IPgeolocation.ioallowed for only 1,000 calls, and the attacker from Tunisia quickly exhausted that limit, disrupting my project. Consequently, I had to spend $15 for an additional 150,000 API calls to salvage my project. </b> <br/>
 </p>
 
 ![Showing_PS_Script_Someone_Already_Found_VM](https://user-images.githubusercontent.com/108043108/225413356-343d9ae2-240d-4841-b41f-62cff77e51ab.JPG)
@@ -206,7 +206,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>Now that I know my PowerShell script is working as it should, I head over to Log Analytics Workbooks to create a custom log so that I can bring my failed_rdp log into Log Analytics. In Log Analytics I navigate to my VM and create a Legacy Custom Log. It asks for a sample log, which is inside the VM. I can't download the logfile from the VM to my native computer, so I have to open the logfile inside the VM, copy the contents, go back to my native computer and open Notepad, paste the copied contents in and save the file to my desktop. From there I can import it into Log Analytic Workbooks. This sample data will be used to train Log Analytics.</b> <br/>
+<b>With my PowerShell script confirmed to be working, I proceed to Log Analytics Workbooks to create a custom log for integrating my failed_rdp log into Log Analytics. In Log Analytics, I navigate to my VM and create a Legacy Custom Log. It prompts for a sample log, which resides in the VM. Since I can't download the logfile directly to my local computer, I open the logfile within the VM, copy its contents, then transfer this data to my local machine by pasting it into Notepad and saving it to my desktop. From there, I import the file into Log Analytics Workbooks. This sample data will be used to train Log Analytics.</b> <br/>
 </p>
 
 ![Custom_Logs](https://user-images.githubusercontent.com/108043108/225421446-5a0c5c4f-62a0-4a07-bb6a-b36edd43b7fd.JPG)
@@ -218,7 +218,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>Next it asks for the collection path. The collection path is where the log lives in the VM, so it asks for a path that Log Analytics can take to reach that logfile. The path to that file is C:\ProgramData\failed_rdp.log. If this path is wrong, Log Analytics wouldn't be able to collect the log information. Next, we have to name our custom log. I decided to name it FAILED_RDP_WITH_GEO and the .CL (Custom Log) will automatically be appended to it. When querying the database later this will basically be the name of the table. We then create the custom log. </b> <br/>
+<b>Next, it asks for the collection path, which is the location of the logfile within the VM. This path is essential for Log Analytics to access and collect log data. The path to the file is C:\ProgramData\failed_rdp.log. If the path is incorrect, Log Analytics won't be able to retrieve the log information. Following that, we need to name our custom log. I chose the name FAILED_RDP_WITH_GEO, and the .CL (Custom Log) suffix will be automatically appended. When querying the database later, this will essentially serve as the table name. Finally, we create the custom log. </b> <br/>
 </p>
 
 ![Custom_Log_6](https://user-images.githubusercontent.com/108043108/225422804-46df9880-9734-420c-84a9-e18ec3a68b57.JPG)
@@ -228,7 +228,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>While that is being provisioned, the creation will be instant, but the data won't be synced from the VM to Log Analytics for a while. I decided to query the Event Viewer, which should have already been synced. You can see in picture 1 that it is indeed showing all the logs. After a little while I decided to query the newly created FAILED_RDP_WITH_GEO custom log, and it is indeed showing information meaning that the VM and Log Analytics as synced and is sending/receiving data. </b><br/>
+<b>While the provisioning process is instant, it will take some time for the data to sync from the VM to Log Analytics. In the meantime, I decided to query the Event Viewer, which should have already synced. As shown in picture 1, it displays all the logs correctly. After a short while, I queried the newly created FAILED_RDP_WITH_GEO custom log, and it successfully showed information, indicating that the VM and Log Analytics are synced and exchanging data.</b><br/>
 </p>
 
 ![Security_Event_4625](https://user-images.githubusercontent.com/108043108/225425000-75d4b1ae-fa60-48a4-af30-8fc5ab52cb8f.JPG)
@@ -237,7 +237,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>Now I have to go in and extract the fields my log uses. This will allow me to later use those fields in Microsoft Sentinel. I right-click a failed rdp login log that has all the raw data in it from my PowerShell script and highlight the data I want. I then name the field that data is going to be in. Once that extraction happens, the Log Analytics AI looks at all of my other sample data and actual logs that were generated and sees if it can pull the correct data. This part is where I have to go in and correct any errors the AI has by again highlighting the correct data point it needs to look for. To do this, I have to scroll through the list (higlighted in blue in picture 4), right click any that is wrong and re-highlight the correct information I want it to pull. The custom fields you're going to create at this stage is: latitude, longitude, destinationhost, username, sourcehost, state, country, label, timestamp.</b><br/>
+<b>Now, I need to extract the fields used in my log, which will allow me to utilize those fields later in Microsoft Sentinel. I start by right-clicking a failed RDP login log that contains all the raw data from my PowerShell script and highlighting the data I want. I then name the field for the data.After this extraction, the Log Analytics AI reviews all other sample data and actual logs generated to identify and pull the correct data. At this stage, I need to correct any errors the AI makes by highlighting the correct data points. To do this, I scroll through the list (highlighted in blue in picture 4), right-click any incorrect entries, and re-highlight the correct information.The custom fields I create at this stage include: latitude, longitude, destinationhost, username, sourcehost, state, country, label, and timestamp.</b><br/>
 </p>
 
 ![Extract_Fields](https://user-images.githubusercontent.com/108043108/225436517-0a82f48e-82c8-45cf-b351-634ee8ba41c7.JPG)
@@ -249,7 +249,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>I waited a little while to see if the fields would populate properly. They all do except sourcehost.CL and I couldn't figure out why. I deleted that field and extracted it multiple times but no matter what I did it would not populate. I could not use an unpopulated field in my sentinel live map, so in the end I decided to delete it and not use that data point at all.</b>  <br/>
+<b>I waited a while to see if the fields would populate properly. All of them did, except for sourcehost.CL, which I couldn't figure out why. I deleted and re-extracted that field multiple times, but it still wouldn't populate. Since an unpopulated field couldn't be used in my Sentinel live map, I ultimately decided to delete it and exclude that data point.</b>  <br/>
 </p>
 
 ![Sourcehost_wouldnt_update](https://user-images.githubusercontent.com/108043108/225451005-edabe896-94b1-4d11-8853-42e4a4ce8e83.JPG)
@@ -258,7 +258,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>The next step taken was to begin setting up my geomap that will pinpoint and map out where the attacks, or login attempts were coming from. I do this by navigating to Microsoft Sentinel. In the first picture we can see that the SIEM has been collecting data properly and categorizing it. I did not set any alerts for this project but it was certainly possible, maybe for a future video. We can see in this picture that there are nearly 10k events and 6.9k security events, coming from Event Viewer in the VM with 2.3k failed RDP attempts. I haven't even finished setting up this project but the person from Tunisia was hard at work trying to brute force into my VM. Good luck ha ha ha!</b>  <br/>
+<b>The next step was to set up a geomap that pinpoints and maps out where the attacks or login attempts were originating. I did this by navigating to Microsoft Sentinel. In the first picture, you can see that the SIEM has been properly collecting and categorizing data. Although I didn't set any alerts for this project, it's certainly a possibility for future endeavors. The picture shows nearly 10,000 events and 6,900 security events, sourced from Event Viewer in the VM, with 2,300 failed RDP attempts.</b>  <br/>
 </p>
 
 ![Setting_Geomap](https://user-images.githubusercontent.com/108043108/225451297-e0c57af2-5333-4b6f-8fff-79b11b816e77.JPG)
@@ -266,7 +266,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>Moving on. To create the map, I want I'll need to create a new workbook in Sentinel. After clicking into workbooks, there is some default graphs or widgets in there. I want to delete those. After deleting those I then get started on creating a new workbook.</b>  <br/>
+<bMoving on, to create the map I want, I'll need to create a new workbook in Sentinel. After clicking into Workbooks, I'll delete the default graphs and widgets. Once those are removed, I'll start creating a new workbook.</b>  <br/>
 </p>
 
 ![setting_geomap_2](https://user-images.githubusercontent.com/108043108/225452457-2c805584-bee1-4c4b-adb3-aa73726c0d0f.JPG)
@@ -276,7 +276,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>To create the map, I need to add a query. Remember, I need to query the data and the fields from Log Analytics. Basically I'm pointing out the dataset I want Microsoft Sentinel to use. In the query I tell it to specifically exclude (!=) the data points that include "Samplehost" since those aren't real attacks and I don't want them to populate on the map.</b>  <br/>
+<b>To create the map, I need to add a query. This query will pull the data and fields from Log Analytics, essentially specifying the dataset I want Microsoft Sentinel to use. In the query, I ensure to specifically exclude (!=) data points that include "Samplehost," as these are not real attacks and I don't want them to populate on the map.</b>  <br/>
 </p>
 
 ![setting_geomap_5](https://user-images.githubusercontent.com/108043108/225453225-24b50358-ac8c-4897-9e44-8d21f4075239.JPG)
@@ -318,7 +318,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>I decided to do the lab again. I wanted to give attackers more time to attack the exposed VM so more locations could be represented on the world map. My decision paid off. I’m very happy that this time a more diverse group of threat actors decided to attack my VM, which resulted in this version of the world map.</b>  <br/>
+<b>I decided to repeat the lab to give attackers more time to target the exposed VM, ensuring a broader representation of locations on the world map. This decision proved successful, as a more diverse group of threat actors attacked my VM this time, resulting in a richer version of the world map.</b>  <br/>
 </p>
 
 ![worldmap2](https://user-images.githubusercontent.com/108043108/226672121-d80091a0-6f7b-4f1d-b5bd-d9416823c6bf.JPG)
@@ -326,11 +326,11 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>I noticed an issue while running this lab a second time. Periodically my PowerShell script would stop updating. It was still running, but no new entries would be generated for 5 – 15 minutes. I thought that was strange. I knew for a fact there were many different countries attempting to brute-force their way into the VM, so there should be a steady stream of new entries. Especially because I set the refresh rate in this PS script to 300 Milliseconds, down from 1 second in the earlier lab. I decided to investigate what was happening. The first step in my investigation was to compare the number of security events where Event ID = 4625 against the number of Failed_RDP_Custom_Log’s generated. I accomplish this by writing queries in Log Analytics Workbook.</b>  <br/>
+<b>While running this lab a second time, I noticed an issue where my PowerShell script would periodically stop updating. Although it was still running, no new entries were generated for 5 to 15 minutes. This was puzzling, given that I knew multiple countries were attempting to brute-force their way into the VM, which should have resulted in a steady stream of new entries. I had set the refresh rate in this PowerShell script to 300 milliseconds, down from 1 second in the earlier lab, to ensure timely updates. To investigate, I decided to compare the number of security events with Event ID = 4625 against the number of Failed_RDP_Custom_Logs generated. I accomplished this by writing queries in Log Analytics Workbook.</b>  <br/>
 </p>
 
 ![Security_Event_ID](https://user-images.githubusercontent.com/108043108/226673169-7b2f64a3-7ab1-4918-98e8-b680a553aabf.jpg)
-<p align="center"><i>After writing my query we can see here that there was a total of 9282 EventID 4625 Security Events. This means that threat actors attempted to log into my VM 9282 times.</i></p>  <br/>
+<p align="center"><i>After writing my query, it is clear that there were a total of 9,282 EventID 4625 Security Events. This indicates that threat actors attempted to log into my VM 9,282 times.</i></p>  <br/>
 
 ![Failed_RDP_Log](https://user-images.githubusercontent.com/108043108/226673194-787f3452-309d-4d0b-a375-c653fb16c4b1.JPG)
 <p align="center">
@@ -340,7 +340,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>Okay, there is a discrepancy here. Both of those number of records should match, or at least be very close to each other. Next I decided to look at my API usage for today. It shows 3541 API requests. It's much closer to my Custom Log FAILED_RDP_CUSTOM_LOG. So now I know it isn't my VM that is failing to send the data to my custom log.</b>  <br/>
+<b>Okay, there is a discrepancy here. Both numbers of records should match, or at least be very close to each other. Next, I decided to examine my API usage for today, which shows 3,541 API requests. This figure is much closer to my Custom Log FAILED_RDP_CUSTOM_LOG. Therefore, I now know that it isn't my VM failing to send the data to my custom log.</b>  <br/>
 </p>
 
 ![API](https://user-images.githubusercontent.com/108043108/226676332-d906603b-59c1-4ad0-94c0-fb665bb26a73.JPG)
@@ -348,7 +348,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>Lastly, I chose to go into Microsoft Sentinel and see what the dashboard is showing. My PowerShell Script was still running in the background so the numbers aren't an exact match because these screenshots were taken a few minutes apart. Again, it is showing a number (4,100) that is much closer to the FAILED_RDP_CUSTOM_LOG query.</b>  <br/>
+<b>Lastly, I decided to check Microsoft Sentinel to see what the dashboard was displaying. My PowerShell script was still running in the background, so the numbers aren't an exact match since the screenshots were taken a few minutes apart. However, it shows a number (4,100) that is much closer to the FAILED_RDP_CUSTOM_LOG query./b>  <br/>
 </p>
 
 ![Sentinel](https://user-images.githubusercontent.com/108043108/226676717-a08eb2c2-6ae1-46f7-8d78-7359b2d610bf.JPG)
@@ -360,7 +360,7 @@ https://user-images.githubusercontent.com/108043108/225419861-a5c9bce1-3f6d-42e9
 <br />
 <br />
 <p align="center">
-<b>What I suspect is happening is that the Windows Event Viewer is working just fine. It is properly logging ALL login attempts and is showing the actual number of attempts that has happened. The weak link in this problem is the PowerShell script. The reason my PowerShell script was pausing for extended amounts of time is because it was being overwhelmed. I set the refresh rate to 300 Milliseconds, but the actual login attempts from several different attackers was much more than 1 attempt per 300 Milliseconds. My PowerShell script was a bottleneck. If it could record each attempt as it happened, it would show the actual number of attempts and be in line with Event Viewer. It could only record 1 attempt per 300 Milliseconds, so some login attempts were being lost or backlogged (I doubt it was backlogged), which lead to the discrepancy we are seeing. Perhaps in the future I could lower the refresh rate even more to allow more login attempts to go through.</b>  <br/>
+<b>What I suspect is happening is that the Windows Event Viewer is working correctly, logging all login attempts and showing the actual number of occurrences. The weak link in this process appears to be the PowerShell script. The reason for the script pausing for extended periods is likely due to it being overwhelmed. I set the refresh rate to 300 milliseconds, but the number of login attempts from multiple attackers exceeded 1 attempt per 300 milliseconds. Consequently, the PowerShell script became a bottleneck. If it could record each attempt as it happened, it would align with the Event Viewer’s numbers. However, since it could only log one attempt per 300 milliseconds, some login attempts were either lost or not processed in real-time, leading to the discrepancy observed. In the future, I might consider lowering the refresh rate even further to allow for more login attempts to be captured accurately.</b>  <br/>
 </p>
 
 
